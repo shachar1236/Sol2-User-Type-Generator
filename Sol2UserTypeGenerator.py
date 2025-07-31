@@ -82,12 +82,12 @@ class CppClass():
     def __init__(self, name):
         self.name = name
         self.constructors = []
-        self.destractor = None
+        self.destructor = None
         self.variables = []
         self.functions = []
 
     def __repr__(self) -> str:
-        return f"Class({self.name}, {self.constructors}, {self.destractor}, {self.variables}, {self.functions})"
+        return f"Class({self.name}, {self.constructors}, {self.destructor}, {self.variables}, {self.functions})"
 
 def parse_if_function(line):
     lexer = Lexer(line)
@@ -128,12 +128,12 @@ def parse_if_variable(line):
     lexer = Lexer(line)
     var_type = lexer.next()
     var_name = lexer.next()
-    third_token = lexer.next()
+    last_token = lexer.next()
     if var_type != "" and var_name != "":
-        if third_token == ";":
+        if last_token == ";":
             return CppClassVariable(var_type, var_name)
 
-        if third_token == "=":
+        if last_token == "=":
             default_value = lexer.next()
             semi_colon = lexer.next();
             if default_value != "" and semi_colon == ";":
@@ -197,19 +197,21 @@ for line in code_lines:
     while (token := lexer.next()) != "":
         match token:
             case "struct" | "class":
-                in_class = True
                 class_name = lexer.next()
-                classes[class_name] = CppClass(class_name)
-                print(f"{Fore.GREEN}Found {token} {class_name}")
-                if token == "struct":
-                    class_fields_state = "public"
-                else:
-                    class_fields_state = "private"
-            case "{":
-               if in_class:
-                    class_brace_count += 1
-            case "}":
-               if in_class:
-                    class_brace_count -= 1
+                end = lexer.next()
+                match end:
+                    case "{":
+                        class_brace_count += 1
+                    case "}":
+                        class_brace_count -= 1
+
+                if end != ";":
+                    in_class = True
+                    classes[class_name] = CppClass(class_name)
+                    print(f"{Fore.GREEN}Found {token} {class_name}")
+                    if token == "struct":
+                        class_fields_state = "public"
+                    else:
+                        class_fields_state = "private"
 
 print(Fore.RESET,classes)
